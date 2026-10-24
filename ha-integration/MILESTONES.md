@@ -115,3 +115,10 @@ Inspect runner assignment/report handlers, integrate coordinator migrations, the
 - `02ce864`: add fail-closed worker policy unit tests (not executed).
 - **Remaining critical path:** compile and test with PostgreSQL; implement lease renewal for slow handlers; wire trusted, idempotent Semaphore completion handlers and actual migration lifecycle; prevent tokenless HA progress after failover using durable ownership lookup.
 - HA execution remains disabled.
+
+## 2026-10-24 M4 recovery controls
+- `0e14881`: attempt-fenced outbox lease renewal primitive.
+- `3034731`: dead-letter replay primitive (not API-wired; requires operator authorization and audit before exposure).
+- `77f55f7`: invalid-input recovery tests committed but not executed.
+- **Remaining:** wire lease renewal into worker lifecycle, implement authorized replay API, durable/idempotent Semaphore completion handler, migrations, PostgreSQL concurrency tests and end-to-end runner integration.
+- M4 incomplete; HA disabled.

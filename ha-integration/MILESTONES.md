@@ -94,3 +94,11 @@ Inspect runner assignment/report handlers, integrate coordinator migrations, the
 - `0961de8`: invalid terminal status/JSON tests committed but not executed.
 - **Pending:** align schema with coordinator prototype, actual DB migration integration, event delivery worker, persisted task-event model, runner API wiring, comprehensive SQL integration tests and multi-node adversarial tests.
 - M4 incomplete. HA dispatch remains disabled.
+
+## 2026-10-24 M4 leased outbox groundwork
+- `474bc2f`: isolated delivery-lease schema migration; not wired to production migrations.
+- `642b025`: PostgreSQL SKIP LOCKED claim and conditional acknowledgment.
+- `7b62a25`: acknowledgment fenced by delivery attempt number as well as owner and lease.
+- `8b4d68b`: invalid-parameter tests committed, not executed.
+- Pending: real outbox consumer/dispatch, retry/backoff and poison-event handling, authenticated API integration, PostgreSQL integration tests, migration wiring and HA rollout gates.
+- Delivery is at-least-once; consumers must be idempotent. M4 incomplete; HA dispatch disabled.

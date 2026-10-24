@@ -61,17 +61,18 @@ func ClaimOutbox(ctx context.Context, db *sql.DB, owner string, limit int, lease
 }
 
 // AcknowledgeOutbox marks a delivered event only while the same worker owns
-// an unexpired lease. A stale worker cannot acknowledge a reassigned event.
+// an unexpired lease and matching attempt number. A stale worker cannot
+// acknowledge a reassigned event even if the same owner name is reused.
 // The downstream consumer must deduplicate by outbox ID, since a crash after
 // delivery but before this acknowledgment will cause redelivery.
-func AcknowledgeOutbox(ctx context.Context, db *sql.DB, id int64, owner string) error {
- if db == nil || id <= 0 || owner == "" { return errors.New("invalid HA outbox acknowledgment") }
+func AcknowledgeOutbox(ctx context.Context, db *sql.DB, id int64, owner string, attempt int) error {
+ if db == nil || id <= 0 || owner == "" || attempt <= 0 { return errors.New("invalid HA outbox acknowledgment") }
  result, err := db.ExecContext(ctx, `
  UPDATE ha_task_outbox SET delivered_at=clock_timestamp(),
  delivery_owner=NULL, delivery_lease_expires_at=NULL
- WHERE id=$1 AND delivery_owner=$2 AND delivered_at IS NULL
+ WHERE id=$1 AND delivery_owner=$2 AND attempts=$3 AND delivered_at IS NULL
  AND delivery_lease_expires_at > clock_timestamp()
- `,id,owner)
+ `,id,owner,attempt)
  if err != nil { return err }
  n,err:=result.RowsAffected()
  if err != nil { return err }

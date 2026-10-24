@@ -27,19 +27,20 @@ func TestTaskPoolDurableClaimInjection(t *testing.T) {
     if p.claimTask != nil {
         t.Fatal("legacy mode should not have a durable claim callback")
     }
-    p.SetClaimTask(func(_ context.Context, id int, token string) (bool, error) {
-        return id == 42 && token == "claim-42", nil
+    p.SetClaimTask(func(_ context.Context, id int) (*DurableTaskClaim, error) {
+        if id != 42 { return nil, nil }
+        return &DurableTaskClaim{TaskID: id, Token: "claim-42", OwnerNode: "node-a", OwnerGeneration: "generation-a"}, nil
     })
-    ok, err := p.claimTask(context.Background(), 42)
-    if err != nil || !ok {
-        t.Fatalf("claim result = (%v, %v)", ok, err)
+    claim, err := p.claimTask(context.Background(), 42)
+    if err != nil || claim == nil || claim.Token != "claim-42" {
+        t.Fatalf("claim result = (%+v, %v)", claim, err)
     }
 }
 
 func TestRemoteFinalizeAuthorizerInjection(t *testing.T) {
     p := &TaskPool{}
-    p.SetRemoteFinalizeAuthorizer(func(_ context.Context, id int) (bool, error) {
-        return id == 42, nil
+    p.SetRemoteFinalizeAuthorizer(func(_ context.Context, id int, token string) (bool, error) {
+        return id == 42 && token == "claim-42", nil
     })
     allowed, err := p.authorizeRemoteFinalize(context.Background(), 42, "claim-42")
     if err != nil || !allowed {
@@ -53,7 +54,7 @@ func TestRemoteFinalizeAuthorizerInjection(t *testing.T) {
 
 func TestLegacyRemoteFinalizeRejectedInHAMode(t *testing.T) {
     p := &TaskPool{}
-    p.SetClaimTask(func(context.Context, int) (bool, error) { return true, nil })
+    p.SetClaimTask(func(context.Context, int) (*DurableTaskClaim, error) { return &DurableTaskClaim{TaskID: 1, Token: "t", OwnerNode: "n", OwnerGeneration: "g"}, nil })
     // Must reject before accessing state or performing any side effects.
     p.FinalizeRemoteTask(nil, nil)
 }

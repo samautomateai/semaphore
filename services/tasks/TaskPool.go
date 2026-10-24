@@ -81,6 +81,11 @@ type TaskPool struct {
 	// state provides pluggable storage for Queue, active projects, running tasks and aliases
 	state TaskStateStore
 
+	// dispatchGuard is optional until HA mode is explicitly wired. When set,
+	// it must fail closed on coordinator/lease failure. This alone does NOT
+	// provide distributed claims or fenced runner completion.
+	dispatchGuard func() error
+
 	// workflowService orchestrates workflow runs (a Pro feature). It is injected
 	// after construction via SetWorkflowService; the pool only calls back into it
 	// when a workflow task finishes. nil in tests / before wiring.
@@ -400,6 +405,15 @@ func (p *TaskPool) handleQueue() {
 
 			if p.blocks(curr) {
 				continue
+			}
+
+			// Do not remove a queued task while HA coordination is unhealthy.
+			// The coordinator must also fence the actual executor handoff.
+			if p.dispatchGuard != nil {
+				if err := p.dispatchGuard(); err != nil {
+					log.WithError(err).Warn("Task dispatch blocked by coordinator")
+					return
+				}
 			}
 
 			// Atomically claim and remove the task so exactly one node runs it.

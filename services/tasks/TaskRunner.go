@@ -43,6 +43,11 @@ type TaskRunner struct {
 	Repository  db.Repository
 	Environment db.Environment
 
+	// durableClaim is assigned only after PostgreSQL grants ownership.
+	// It must be propagated to the authenticated runner before HA dispatch.
+	// This field is not yet serialized into the remote runner protocol.
+	durableClaim *DurableTaskClaim
+
 	// HostConfigs are the credential mappings of the project. They are resolved
 	// here, on the server, because a remote runner has no database.
 	HostConfigs []db.HostConfig
@@ -104,6 +109,14 @@ func NewTaskRunner(
 		Username:     username,
 		keyInstaller: keyInstaller,
 	}
+}
+
+// DurableClaim returns a defensive copy of the task's durable execution claim.
+// Callers must not mutate the returned claim or derive a new fencing token.
+func (t *TaskRunner) DurableClaim() *DurableTaskClaim {
+	if t.durableClaim == nil { return nil }
+	copy := *t.durableClaim
+	return &copy
 }
 
 func (t *TaskRunner) AddStatusListener(l task_logger.StatusListener) {

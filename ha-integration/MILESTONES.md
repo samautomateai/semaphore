@@ -55,3 +55,8 @@ Inspect runner assignment/report handlers, integrate coordinator migrations, the
 - `11a129f`: tests for disabled-by-default gate and callback injection committed, not executed.
 - This is **not** authenticated runner token transport or transactional executor fencing. A permissive callback could bypass readiness; no production enablement is authorized.
 - Next: inspect actual runner assignment/report API models and wire the claim token end to end, with PostgreSQL transaction checks.
+
+## 2026-10-24 M3 safety correction and contract
+- `52b49cd`, `b240291`: hard-disable HA dispatch, regardless of readiness callback, until authenticated runner fencing and atomic status persistence exist. Legacy mode remains available.
+- `b267e9a`: adds validated assignment/completion DTO contract in `ha-integration/hafence/protocol.go`; **not yet wired into HTTP runner handlers**.
+- No compilation or integration test executed. Do not mark M3 complete.

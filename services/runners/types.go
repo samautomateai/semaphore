@@ -122,4 +122,5 @@ type job struct {
 	// shipped to the server with the success status, and an executor that
 	// cannot capture them says so in the task log.
 	workflowTask bool
+	fencing *FencingIdentity
 }

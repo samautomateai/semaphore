@@ -11,7 +11,7 @@ Updated 2026-10-24. "Committed" does not mean compiled or tested.
 | M1.8 | Explicit runner fencing token completion entry point | Committed; token not transported |
 | M1.9 | Transaction boundary for terminal fencing | Stub; always errors |
 | M1.10 | Agent guidance, documentation, milestone tracker | Committed |
-| M2 | Import coordinator and migrations into fork | Pending |
+| M2 | Import coordinator and migrations into fork | In progress: fenced claim-lock helper committed; coordinator import pending |
 | M3 | Authenticated runner assignment/report fencing token | Pending |
 | M4 | Atomic fenced task and output writes | Pending |
 | M5 | Heartbeat, recovery and stop routing | Pending |
@@ -31,3 +31,9 @@ Updated 2026-10-24. "Committed" does not mean compiled or tested.
 
 ## Next
 Inspect runner assignment/report handlers, integrate coordinator migrations, then implement locked PostgreSQL writes and stale-runner tests. Record commit hashes and executed verification with each change.
+
+## 2026-10-24 M2 progress
+- `3f4f159`: transactional claim and node row locking against actual `ha_task_queue` schema.
+- `9d27f4f`: negative-path unit tests committed, **not executed in the fork**.
+- The Semaphore terminal status adapter still fails closed; runner protocol, migration import, and integration tests remain pending.
+- Important: the current TaskPool callback API only returns a boolean claim, not the claim token; redesign this before HA rollout.

@@ -30,6 +30,7 @@ type runningJob struct {
 	// the executor for it. Necessary because executor is now an interface and the
 	// id-bearing db.Task is owned by the concrete type.
 	taskID int
+	fencing *FencingIdentity
 	job    tasks.Executor
 	commit *CommitInfo
 

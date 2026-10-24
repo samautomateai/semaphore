@@ -91,6 +91,11 @@ type TaskPool struct {
 	// Returning an error stops this dispatch pass (fail closed).
 	claimTask func(context.Context, int) (bool, error)
 
+	// authorizeRemoteFinalize must atomically validate the durable fencing
+	// token before any remote completion side effects. In HA mode, failure
+	// must deny finalization; a nil callback is allowed only in legacy mode.
+	authorizeRemoteFinalize func(context.Context, int) (bool, error)
+
 	// workflowService orchestrates workflow runs (a Pro feature). It is injected
 	// after construction via SetWorkflowService; the pool only calls back into it
 	// when a workflow task finishes. nil in tests / before wiring.
@@ -163,6 +168,12 @@ func (p *TaskPool) SetDispatchGuard(check func() error) {
 // still require fencing checks. Configure before starting the pool.
 func (p *TaskPool) SetClaimTask(claim func(context.Context, int) (bool, error)) {
 	p.claimTask = claim
+}
+
+// SetRemoteFinalizeAuthorizer configures the durable fencing check used before
+// remote task finalization. Configure before starting the task pool.
+func (p *TaskPool) SetRemoteFinalizeAuthorizer(check func(context.Context, int) (bool, error)) {
+	p.authorizeRemoteFinalize = check
 }
 
 // StateStore returns the pluggable task state backend. Used by the Cluster
@@ -601,6 +612,17 @@ func (p *TaskPool) FinalizeRemoteTask(tsk *TaskRunner, runner *db.Runner) {
 		return
 	}
 
+	if p.claimTask != nil {
+		if p.authorizeRemoteFinalize == nil {
+			log.WithField("task_id", tsk.Task.ID).Error("HA remote finalization rejected: no fencing authorizer")
+			return
+		}
+		allowed, err := p.authorizeRemoteFinalize(context.Background(), tsk.Task.ID)
+		if err != nil || !allowed {
+			log.WithError(err).WithField("task_id", tsk.Task.ID).Warn("HA remote finalization rejected by fencing check")
+			return
+		}
+	}
 	if !p.state.TryFinalize(tsk.Task.ID) {
 		return
 	}

@@ -8,7 +8,16 @@ import (
 	"github.com/semaphoreui/semaphore/services/tasks"
 )
 
+// FencingIdentity binds an assignment to one durable HA execution attempt.
+// It is opaque to runners and must be echoed unchanged in progress reports.
+type FencingIdentity struct {
+	Token string `json:"token"`
+	OwnerNode string `json:"owner_node"`
+	OwnerGeneration string `json:"owner_generation"`
+}
+
 type JobData struct {
+	Fencing *FencingIdentity `json:"fencing,omitempty"`
 	Username            string
 	IncomingVersion     *string
 	Alias               string
@@ -61,6 +70,7 @@ type RunnerProgressResponse struct {
 }
 
 type JobProgress struct {
+	Fencing *FencingIdentity `json:"fencing,omitempty"`
 	ID         int
 	Status     task_logger.TaskStatus
 	LogRecords []LogRecord

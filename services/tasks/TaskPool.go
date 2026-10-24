@@ -468,48 +468,11 @@ func (p *TaskPool) handleQueue() {
 			// Atomically claim and remove the task so exactly one node runs it.
 			// On failure another node owns it (or it is already gone); leave it.
 			if p.claimTask != nil {
-				// HARD SAFETY GATE: no current runner assignment or completion
-				// protocol carries an authenticated durable fencing token, and
-				// task status/output writes are not transactionally fenced.
-				// A configurable readiness callback is NOT sufficient proof.
-				// Remove this gate only together with the real end-to-end
-				// protocol, transactional persistence and adversarial tests.
-				log.WithField("task_id", curr.Task.ID).Error("HA task dispatch unavailable: end-to-end fencing not implemented")
+				// No runner protocol transports authenticated fencing identity yet.
+				// The existing callback seams do not make executor handoff safe.
+				// Fail closed before acquiring a durable claim or starting work.
+				log.WithField("task_id", curr.Task.ID).Error("HA dispatch disabled: authenticated runner fencing and atomic persistence not implemented")
 				return
-				// A configured HA claim must not fall back to a local-only claim.
-				if p.dispatchGuard == nil {
-					log.Error("HA claim configured without dispatch guard")
-					return
-				}
-				if p.authorizeHandoff == nil {
-					log.WithField("task_id", curr.Task.ID).Error("HA dispatch disabled: runner handoff not integrated")
-					return
-				}
-				if err := p.authorizeHandoff(context.Background(), curr.Task.ID); err != nil {
-					log.WithError(err).WithField("task_id", curr.Task.ID).Warn("HA handoff readiness rejected")
-					return
-				}
-				claim, err := p.claimTask(context.Background(), curr.Task.ID)
-				if err != nil {
-					log.WithError(err).Error("Durable task claim failed; stopping dispatch")
-					return
-				}
-				if claim == nil {
-					continue
-				}
-				if claim.TaskID != curr.Task.ID || claim.Token == "" || claim.OwnerNode == "" || claim.OwnerGeneration == "" {
-					log.WithField("task_id", curr.Task.ID).Error("Durable claim missing fencing identity; stopping dispatch")
-					return
-				}
-				// Attach the exact granted claim before any executor handoff.
-				curr.durableClaim = &DurableTaskClaim{
-					TaskID: claim.TaskID,
-					Token: claim.Token,
-					OwnerNode: claim.OwnerNode,
-					OwnerGeneration: claim.OwnerGeneration,
-				}
-				// Remove the local queue entry only after durable ownership succeeds.
-				p.state.DequeueByID(curr.Task.ID)
 			} else if !p.state.ClaimAndDequeue(curr.Task.ID) {
 				continue
 			}

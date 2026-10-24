@@ -13,5 +13,12 @@ func NewRoleSyncService(mappings db.RoleMappingStore) pro_interfaces.RoleSyncSer
 }
 
 func (s *RoleSyncServiceImpl) SyncLoginRoles(userID int, provider string, claims map[string]any) ([]db.MappedRole, []db.MappedRole, error) {
+	// Reject malformed OIDC group claims even while Community group-role
+	// persistence is unavailable. Never imply that roles were synchronized.
+	if provider != "" {
+		if _, _, err := parseOIDCGroups(claims); err != nil {
+			return nil, nil, err
+		}
+	}
 	return nil, nil, nil
 }

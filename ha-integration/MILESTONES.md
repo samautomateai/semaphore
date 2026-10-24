@@ -37,3 +37,9 @@ Inspect runner assignment/report handlers, integrate coordinator migrations, the
 - `9d27f4f`: negative-path unit tests committed, **not executed in the fork**.
 - The Semaphore terminal status adapter still fails closed; runner protocol, migration import, and integration tests remain pending.
 - Important: the current TaskPool callback API only returns a boolean claim, not the claim token; redesign this before HA rollout.
+
+## 2026-10-24 typed claim progress
+- `84ef5ed`: durable claim callback now returns task ID, opaque token, owner node and owner generation. Dispatch rejects malformed claims.
+- `2fb5582`: fixes earlier inconsistent test callback signatures. Tests remain **unexecuted**.
+- **Important safety limitation:** the claim is not yet attached to the TaskRunner or runner assignment payload, and executor handoff is not fenced. Do not enable HA mode.
+- Next: carry claim through TaskRunner and remote runner protocol; implement atomic PostgreSQL completion and output writes.

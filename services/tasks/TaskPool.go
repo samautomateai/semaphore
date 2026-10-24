@@ -86,6 +86,11 @@ type TaskPool struct {
 	// provide distributed claims or fenced runner completion.
 	dispatchGuard func() error
 
+	// claimTask replaces the process-local claim when HA mode is configured.
+	// It must atomically acquire durable ownership and persist a fencing token.
+	// Returning an error stops this dispatch pass (fail closed).
+	claimTask func(context.Context, int) (bool, error)
+
 	// workflowService orchestrates workflow runs (a Pro feature). It is injected
 	// after construction via SetWorkflowService; the pool only calls back into it
 	// when a workflow task finishes. nil in tests / before wiring.
@@ -151,6 +156,13 @@ func CreateTaskPool(
 // it concurrently with task dispatch.
 func (p *TaskPool) SetDispatchGuard(check func() error) {
 	p.dispatchGuard = check
+}
+
+// SetClaimTask installs a durable task ownership callback for HA mode.
+// The callback must not dispatch externally: executor handoff and completion
+// still require fencing checks. Configure before starting the pool.
+func (p *TaskPool) SetClaimTask(claim func(context.Context, int) (bool, error)) {
+	p.claimTask = claim
 }
 
 // StateStore returns the pluggable task state backend. Used by the Cluster
@@ -425,7 +437,23 @@ func (p *TaskPool) handleQueue() {
 
 			// Atomically claim and remove the task so exactly one node runs it.
 			// On failure another node owns it (or it is already gone); leave it.
-			if !p.state.ClaimAndDequeue(curr.Task.ID) {
+			if p.claimTask != nil {
+				// A configured HA claim must not fall back to a local-only claim.
+				if p.dispatchGuard == nil {
+					log.Error("HA claim configured without dispatch guard")
+					return
+				}
+				claimed, err := p.claimTask(context.Background(), curr.Task.ID)
+				if err != nil {
+					log.WithError(err).Error("Durable task claim failed; stopping dispatch")
+					return
+				}
+				if !claimed {
+					continue
+				}
+				// Remove the local queue entry only after durable ownership succeeds.
+				p.state.DequeueByID(curr.Task.ID)
+			} else if !p.state.ClaimAndDequeue(curr.Task.ID) {
 				continue
 			}
 

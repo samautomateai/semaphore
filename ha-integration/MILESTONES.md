@@ -43,3 +43,9 @@ Inspect runner assignment/report handlers, integrate coordinator migrations, the
 - `2fb5582`: fixes earlier inconsistent test callback signatures. Tests remain **unexecuted**.
 - **Important safety limitation:** the claim is not yet attached to the TaskRunner or runner assignment payload, and executor handoff is not fenced. Do not enable HA mode.
 - Next: carry claim through TaskRunner and remote runner protocol; implement atomic PostgreSQL completion and output writes.
+
+## 2026-10-24 TaskRunner claim attachment
+- `f0710e0`: TaskRunner retains the durable claim and exposes a defensive-copy accessor.
+- `6426d97`: TaskPool attaches the exact granted claim before calling runTask.
+- `ad4efbc`: adds accessor tests; not yet executed.
+- No remote protocol propagation or atomic completion persistence yet. The PostgreSQL coordinator is not wired into startup; HA remains disabled.

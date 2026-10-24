@@ -109,3 +109,9 @@ Inspect runner assignment/report handlers, integrate coordinator migrations, the
 - `88d2157`: fenced failure transition with retry/dead-letter policy.
 - `f5d8a21`: opt-in RunOnce delivery worker with caller-supplied idempotent handler; not registered in server lifecycle.
 - **Pending:** actual Semaphore task-completed handler and transactional deduplication, production migration registration, retry backoff policy, lease extension for slow handlers, PostgreSQL integration tests, multi-node tests and HA rollout gate. No tests executed. M4 incomplete; HA disabled.
+
+## 2026-10-24 M4 validation follow-up
+- `9db9042`: prohibit output writes for non-success statuses; permit starting/stopping status transitions in fenced task mutation.
+- `02ce864`: add fail-closed worker policy unit tests (not executed).
+- **Remaining critical path:** compile and test with PostgreSQL; implement lease renewal for slow handlers; wire trusted, idempotent Semaphore completion handlers and actual migration lifecycle; prevent tokenless HA progress after failover using durable ownership lookup.
+- HA execution remains disabled.

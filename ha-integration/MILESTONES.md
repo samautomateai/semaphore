@@ -80,3 +80,10 @@ Inspect runner assignment/report handlers, integrate coordinator migrations, the
 - `0eb0f5f`: conversion and completion validation unit tests committed; not executed.
 - `0f1f3a5`: CommitTerminal adapter boundary invokes caller's persistence callback under WithClaimLock; absent callback fails closed.
 - **Still missing:** Semaphore-specific SQL updates for status, output, task events and durable outbox; schema verification; server handler integration; runner binding and stale-claim concurrency tests. M4 not complete; HA remains disabled.
+
+## 2026-10-24 M4 task persistence primitive
+- `636735d`: reject reports with explicit HA fencing identity on legacy runner progress path, including after in-memory task reconstruction.
+- `3059eeb`: PostgreSQL task status/artifacts mutation under WithClaimLock with runner ID and nonterminal row predicates. No outbox or event write yet.
+- `c1143dc`: nil transaction/database rejection tests committed, not executed.
+- **Security caveat:** legacy reports without fencing identity for reconstructed HA tasks require a durable database-level HA ownership check before enabling HA. Terminal mutation helper is not production-wired; status transitions, schema and transaction semantics require integration tests.
+- M4 incomplete; HA dispatch hard disabled.

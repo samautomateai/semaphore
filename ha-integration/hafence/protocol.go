@@ -3,6 +3,7 @@ package hafence
 import (
  "errors"
  "fmt"
+ "strconv"
 )
 
 var ErrInvalidReport = errors.New("invalid fenced runner report")
@@ -40,4 +41,21 @@ func (c Completion) Validate() error {
  default:
   return fmt.Errorf("%w: unsupported status %q",ErrInvalidReport,c.Status)
  }
+}
+
+// Claim converts a runner's opaque wire identity into the PostgreSQL fencing
+// representation. Tokens are positive decimal integers; never silently coerce
+// malformed or overflowed values to zero.
+func (a Assignment) Claim() (Claim, error) {
+ if err := a.Validate(); err != nil { return Claim{}, err }
+ token, err := strconv.ParseInt(a.FencingToken, 10, 64)
+ if err != nil || token <= 0 {
+  return Claim{}, fmt.Errorf("%w: fencing token must be a positive decimal integer", ErrInvalidReport)
+ }
+ return Claim{
+  TaskID: a.TaskID,
+  Token: token,
+  OwnerNode: a.OwnerNode,
+  OwnerGeneration: a.OwnerGeneration,
+ }, nil
 }

@@ -741,7 +741,8 @@ type oAuthState struct {
 
 func generateStateOauthCookie(w http.ResponseWriter, returnPath string, link bool) string {
 
-	expiration := tz.Now().Add(365 * 24 * time.Hour)
+	// OAuth state is a short-lived, single-login CSRF secret, not a persistent cookie.
+	expiration := tz.Now().Add(10 * time.Minute)
 
 	b := make([]byte, 16)
 	_, err := rand.Read(b)
@@ -755,9 +756,11 @@ func generateStateOauthCookie(w http.ResponseWriter, returnPath string, link boo
 		Link:   link,
 	}
 
-	// Secure flag is not set to allow Semaphore to be used without HTTPS inside private networks
+	// Match the security attributes of the session cookie on HTTPS hosts.
 	cookie := http.Cookie{
 		Name:     "oauthstate",
+		Path:     "/",
+		Secure:   isSecureWebHost(),
 		Value:    state.Csrf,
 		Expires:  expiration,
 		HttpOnly: true,

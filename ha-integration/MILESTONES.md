@@ -67,3 +67,10 @@ Inspect runner assignment/report handlers, integrate coordinator migrations, the
 - `8b391b2`: server rejects progress reports for in-memory HA-claimed tasks pending atomic fenced persistence.
 - **Not complete:** runner client does not yet echo identity; task status/output writes remain unfenced; HA dispatch remains hard disabled. Reports for HA tasks reconstructed without in-memory claims need durable DB checks before enabling HA.
 - No full compile or integration tests executed.
+
+## 2026-10-24 M3 runner echo
+- `8f2cb31`: queued job retains assignment fencing identity.
+- `128d1fe`: running job retains identity.
+- `5514eb2`: progress report echoes identity from original assignment.
+- Pending: verify protocol serialization in tests, validate runner identity and fencing claim transactionally on server, and implement atomic task/output persistence.
+- HA dispatch remains hard disabled; no full compilation or integration tests executed.

@@ -100,6 +100,10 @@ type TaskPool struct {
 	// Returning an error stops this dispatch pass (fail closed).
 	claimTask func(context.Context, int) (*DurableTaskClaim, error)
 
+	// authorizeHandoff must verify the claim and runner transport readiness
+	// before durable ownership is acquired. Until installed, HA dispatch is disabled.
+	authorizeHandoff func(context.Context, int) error
+
 	// authorizeRemoteFinalize must atomically validate the durable fencing
 	// token before any remote completion side effects. In HA mode, failure
 	// must deny finalization; a nil callback is allowed only in legacy mode.
@@ -177,6 +181,12 @@ func (p *TaskPool) SetDispatchGuard(check func() error) {
 // still require fencing checks. Configure before starting the pool.
 func (p *TaskPool) SetClaimTask(claim func(context.Context, int) (*DurableTaskClaim, error)) {
 	p.claimTask = claim
+}
+
+// SetHAHandoffAuthorizer installs a pre-claim readiness gate. This is not a
+// substitute for fencing the actual executor handoff and status writes.
+func (p *TaskPool) SetHAHandoffAuthorizer(check func(context.Context, int) error) {
+	p.authorizeHandoff = check
 }
 
 // SetRemoteFinalizeAuthorizer configures the durable fencing check used before
@@ -461,6 +471,14 @@ func (p *TaskPool) handleQueue() {
 				// A configured HA claim must not fall back to a local-only claim.
 				if p.dispatchGuard == nil {
 					log.Error("HA claim configured without dispatch guard")
+					return
+				}
+				if p.authorizeHandoff == nil {
+					log.WithField("task_id", curr.Task.ID).Error("HA dispatch disabled: runner handoff not integrated")
+					return
+				}
+				if err := p.authorizeHandoff(context.Background(), curr.Task.ID); err != nil {
+					log.WithError(err).WithField("task_id", curr.Task.ID).Warn("HA handoff readiness rejected")
 					return
 				}
 				claim, err := p.claimTask(context.Background(), curr.Task.ID)

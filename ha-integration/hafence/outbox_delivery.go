@@ -33,6 +33,8 @@ func ClaimOutbox(ctx context.Context, db *sql.DB, owner string, limit int, lease
  WITH candidates AS (
   SELECT id FROM ha_task_outbox
   WHERE delivered_at IS NULL
+    AND dead_lettered_at IS NULL
+    AND available_at <= clock_timestamp()
     AND (delivery_lease_expires_at IS NULL OR delivery_lease_expires_at < clock_timestamp())
   ORDER BY id
   FOR UPDATE SKIP LOCKED LIMIT $1

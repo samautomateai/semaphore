@@ -58,3 +58,24 @@ func TestLegacyRemoteFinalizeRejectedInHAMode(t *testing.T) {
     // Must reject before accessing state or performing any side effects.
     p.FinalizeRemoteTask(nil, nil)
 }
+
+func TestTaskRunnerDurableClaimReturnsCopy(t *testing.T) {
+    runner := &TaskRunner{durableClaim: &DurableTaskClaim{
+        TaskID: 42, Token: "token-42", OwnerNode: "node-a", OwnerGeneration: "generation-a",
+    }}
+    copy := runner.DurableClaim()
+    if copy == nil || copy.Token != "token-42" {
+        t.Fatalf("unexpected claim: %+v", copy)
+    }
+    copy.Token = "tampered"
+    if runner.DurableClaim().Token != "token-42" {
+        t.Fatal("caller mutated original durable claim")
+    }
+}
+
+func TestTaskRunnerDurableClaimLegacyMode(t *testing.T) {
+    runner := &TaskRunner{}
+    if runner.DurableClaim() != nil {
+        t.Fatal("legacy runner should have no durable claim")
+    }
+}

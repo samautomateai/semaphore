@@ -417,6 +417,7 @@ func (p *JobPool) Run() {
 			rj := &runningJob{
 				job:    t.job,
 				taskID: t.taskID,
+				fencing: t.fencing,
 				status: task_logger.TaskStartingStatus,
 			}
 			p.addRunningJob(t.taskID, rj)
@@ -540,6 +541,7 @@ func (p *JobPool) sendProgress() (ok bool) {
 			Status:     status,
 			Commit:     commit,
 			Outputs:    outputs,
+			Fencing:    j.fencing,
 		})
 
 		log.WithFields(log.Fields{
@@ -1035,6 +1037,7 @@ func (p *JobPool) checkNewJobs() {
 			taskID:          newJob.Task.ID,
 			status:          newJob.Task.Status,
 			workflowTask:    newJob.Task.WorkflowRunID != nil,
+			fencing:         newJob.Fencing,
 		}
 
 		p.enqueue(&taskRunner)

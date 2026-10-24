@@ -87,3 +87,10 @@ Inspect runner assignment/report handlers, integrate coordinator migrations, the
 - `c1143dc`: nil transaction/database rejection tests committed, not executed.
 - **Security caveat:** legacy reports without fencing identity for reconstructed HA tasks require a durable database-level HA ownership check before enabling HA. Terminal mutation helper is not production-wired; status transitions, schema and transaction semantics require integration tests.
 - M4 incomplete; HA dispatch hard disabled.
+
+## 2026-10-24 M4 durable completion outbox prototype
+- `9f8873a`: isolated `ha_task_outbox` PostgreSQL schema; not registered with Semaphore migrations.
+- `a491760`: `CommitTaskTerminal` atomically applies fenced task mutation and inserts idempotent completion outbox record; does not publish events or perform workflow advancement.
+- `0961de8`: invalid terminal status/JSON tests committed but not executed.
+- **Pending:** align schema with coordinator prototype, actual DB migration integration, event delivery worker, persisted task-event model, runner API wiring, comprehensive SQL integration tests and multi-node adversarial tests.
+- M4 incomplete. HA dispatch remains disabled.

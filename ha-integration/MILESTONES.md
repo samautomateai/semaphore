@@ -74,3 +74,9 @@ Inspect runner assignment/report handlers, integrate coordinator migrations, the
 - `5514eb2`: progress report echoes identity from original assignment.
 - Pending: verify protocol serialization in tests, validate runner identity and fencing claim transactionally on server, and implement atomic task/output persistence.
 - HA dispatch remains hard disabled; no full compilation or integration tests executed.
+
+## 2026-10-24 M4 transactional adapter groundwork
+- `dc7f213`: strict positive decimal token parsing from runner wire contract into SQL Claim (int64).
+- `0eb0f5f`: conversion and completion validation unit tests committed; not executed.
+- `0f1f3a5`: CommitTerminal adapter boundary invokes caller's persistence callback under WithClaimLock; absent callback fails closed.
+- **Still missing:** Semaphore-specific SQL updates for status, output, task events and durable outbox; schema verification; server handler integration; runner binding and stale-claim concurrency tests. M4 not complete; HA remains disabled.

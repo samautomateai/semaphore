@@ -102,3 +102,10 @@ Inspect runner assignment/report handlers, integrate coordinator migrations, the
 - `8b4d68b`: invalid-parameter tests committed, not executed.
 - Pending: real outbox consumer/dispatch, retry/backoff and poison-event handling, authenticated API integration, PostgreSQL integration tests, migration wiring and HA rollout gates.
 - Delivery is at-least-once; consumers must be idempotent. M4 incomplete; HA dispatch disabled.
+
+## 2026-10-24 M4 outbox retries and opt-in worker
+- `deb9cf6`: retry availability, dead-letter timestamp and last-error schema.
+- `b2b3acb`: claim query excludes deferred and dead-letter events.
+- `88d2157`: fenced failure transition with retry/dead-letter policy.
+- `f5d8a21`: opt-in RunOnce delivery worker with caller-supplied idempotent handler; not registered in server lifecycle.
+- **Pending:** actual Semaphore task-completed handler and transactional deduplication, production migration registration, retry backoff policy, lease extension for slow handlers, PostgreSQL integration tests, multi-node tests and HA rollout gate. No tests executed. M4 incomplete; HA disabled.

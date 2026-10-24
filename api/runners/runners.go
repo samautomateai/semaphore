@@ -191,6 +191,14 @@ func (c *RunnerController) prepareRemoteJob(tsk *tasks.TaskRunner, runner *db.Ru
 		HostConfigs:         tsk.HostConfigs,
 	}
 
+	if claim := tsk.DurableClaim(); claim != nil {
+		jobData.Fencing = &runners.FencingIdentity{
+			Token: claim.Token,
+			OwnerNode: claim.OwnerNode,
+			OwnerGeneration: claim.OwnerGeneration,
+		}
+	}
+
 	// Always overwrite: the dispatched Secret must be exactly the
 	// DB-derived value, never whatever the in-memory task carries
 	jobData.Task.Secret = surveySecrets

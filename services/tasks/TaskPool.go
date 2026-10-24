@@ -94,7 +94,7 @@ type TaskPool struct {
 	// authorizeRemoteFinalize must atomically validate the durable fencing
 	// token before any remote completion side effects. In HA mode, failure
 	// must deny finalization; a nil callback is allowed only in legacy mode.
-	authorizeRemoteFinalize func(context.Context, int) (bool, error)
+	authorizeRemoteFinalize func(context.Context, int, string) (bool, error)
 
 	// workflowService orchestrates workflow runs (a Pro feature). It is injected
 	// after construction via SetWorkflowService; the pool only calls back into it
@@ -172,7 +172,7 @@ func (p *TaskPool) SetClaimTask(claim func(context.Context, int) (bool, error)) 
 
 // SetRemoteFinalizeAuthorizer configures the durable fencing check used before
 // remote task finalization. Configure before starting the task pool.
-func (p *TaskPool) SetRemoteFinalizeAuthorizer(check func(context.Context, int) (bool, error)) {
+func (p *TaskPool) SetRemoteFinalizeAuthorizer(check func(context.Context, int, string) (bool, error)) {
 	p.authorizeRemoteFinalize = check
 }
 
@@ -607,19 +607,41 @@ func (p *TaskPool) onTaskStop(t *TaskRunner) {
 // call from several racing signals (runner report, timeout, force stop) — the
 // state store's TryFinalize guard ensures it runs at most once per task across
 // the cluster (Redis SETNX in HA) and within a process (in-memory sync.Map).
+// FinalizeRemoteTask is the legacy runner completion entry point. It cannot
+// authenticate a durable HA claim and therefore refuses HA finalization.
 func (p *TaskPool) FinalizeRemoteTask(tsk *TaskRunner, runner *db.Runner) {
+	if p.claimTask != nil {
+		log.Error("HA remote completion requires a fencing token; legacy entry point rejected")
+		return
+	}
+	p.finalizeRemoteTaskWithToken(tsk, runner, "")
+}
+
+// FinalizeRemoteTaskFenced is the token-aware completion entry point.
+// IMPORTANT: the caller must obtain the token from an authenticated runner
+// report; it must never infer a token from the current database owner.
+// Authorization alone is not an atomic database status write: callers must
+// also fence output and terminal-status persistence before using HA mode.
+func (p *TaskPool) FinalizeRemoteTaskFenced(tsk *TaskRunner, runner *db.Runner, token string) {
+	if p.claimTask != nil && token == "" {
+		log.Error("HA remote completion rejected: empty fencing token")
+		return
+	}
+	p.finalizeRemoteTaskWithToken(tsk, runner, token)
+}
+
+func (p *TaskPool) finalizeRemoteTaskWithToken(tsk *TaskRunner, runner *db.Runner, token string) {
 	if tsk == nil {
 		return
 	}
-
 	if p.claimTask != nil {
 		if p.authorizeRemoteFinalize == nil {
-			log.WithField("task_id", tsk.Task.ID).Error("HA remote finalization rejected: no fencing authorizer")
+			log.WithField("task_id", tsk.Task.ID).Error("HA remote completion rejected: no fencing authorizer")
 			return
 		}
-		allowed, err := p.authorizeRemoteFinalize(context.Background(), tsk.Task.ID)
+		allowed, err := p.authorizeRemoteFinalize(context.Background(), tsk.Task.ID, token)
 		if err != nil || !allowed {
-			log.WithError(err).WithField("task_id", tsk.Task.ID).Warn("HA remote finalization rejected by fencing check")
+			log.WithError(err).WithField("task_id", tsk.Task.ID).Warn("HA remote completion rejected by fencing check")
 			return
 		}
 	}
@@ -627,7 +649,6 @@ func (p *TaskPool) FinalizeRemoteTask(tsk *TaskRunner, runner *db.Runner) {
 		return
 	}
 	defer p.state.DeleteFinalize(tsk.Task.ID)
-
 	p.finalizeRemoteTaskLocked(tsk, runner)
 }
 

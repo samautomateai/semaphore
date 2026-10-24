@@ -198,11 +198,14 @@ func TestGenerateStateOauthCookie(t *testing.T) {
 
 	// Test 8: Verify cookie value matches CSRF token in state
 	assert.Equal(t, state.Csrf, oauthCookie.Value, "Cookie value should match CSRF token")
+	assert.Equal(t, "/", oauthCookie.Path, "OAuth state cookie must cover login and callback paths")
+	assert.True(t, oauthCookie.HttpOnly, "OAuth state cookie must not be script-readable")
+	assert.Equal(t, http.SameSiteLaxMode, oauthCookie.SameSite, "OAuth state cookie must use SameSite Lax")
 
 	// Test 9: Verify cookie has expiration set (should be ~365 days)
 	assert.False(t, oauthCookie.Expires.IsZero(), "Cookie expiration should be set")
 
-	expectedExpiration := time.Now().Add(365 * 24 * time.Hour)
+	expectedExpiration := time.Now().Add(10 * time.Minute)
 	timeDiff := oauthCookie.Expires.Sub(expectedExpiration)
 	if timeDiff < 0 {
 		timeDiff = -timeDiff

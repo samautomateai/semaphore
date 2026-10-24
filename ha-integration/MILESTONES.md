@@ -49,3 +49,9 @@ Inspect runner assignment/report handlers, integrate coordinator migrations, the
 - `6426d97`: TaskPool attaches the exact granted claim before calling runTask.
 - `ad4efbc`: adds accessor tests; not yet executed.
 - No remote protocol propagation or atomic completion persistence yet. The PostgreSQL coordinator is not wired into startup; HA remains disabled.
+
+## 2026-10-24 M3 pre-handoff gate
+- `9044e35`: HA durable claim path requires an explicitly configured handoff-readiness callback before acquiring ownership.
+- `11a129f`: tests for disabled-by-default gate and callback injection committed, not executed.
+- This is **not** authenticated runner token transport or transactional executor fencing. A permissive callback could bypass readiness; no production enablement is authorized.
+- Next: inspect actual runner assignment/report API models and wire the claim token end to end, with PostgreSQL transaction checks.

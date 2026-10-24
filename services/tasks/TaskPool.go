@@ -475,6 +475,13 @@ func (p *TaskPool) handleQueue() {
 					log.WithField("task_id", curr.Task.ID).Error("Durable claim missing fencing identity; stopping dispatch")
 					return
 				}
+				// Attach the exact granted claim before any executor handoff.
+				curr.durableClaim = &DurableTaskClaim{
+					TaskID: claim.TaskID,
+					Token: claim.Token,
+					OwnerNode: claim.OwnerNode,
+					OwnerGeneration: claim.OwnerGeneration,
+				}
 				// Remove the local queue entry only after durable ownership succeeds.
 				p.state.DequeueByID(curr.Task.ID)
 			} else if !p.state.ClaimAndDequeue(curr.Task.ID) {

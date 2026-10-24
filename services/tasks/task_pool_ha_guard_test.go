@@ -27,8 +27,8 @@ func TestTaskPoolDurableClaimInjection(t *testing.T) {
     if p.claimTask != nil {
         t.Fatal("legacy mode should not have a durable claim callback")
     }
-    p.SetClaimTask(func(_ context.Context, id int) (bool, error) {
-        return id == 42, nil
+    p.SetClaimTask(func(_ context.Context, id int, token string) (bool, error) {
+        return id == 42 && token == "claim-42", nil
     })
     ok, err := p.claimTask(context.Background(), 42)
     if err != nil || !ok {
@@ -41,12 +41,19 @@ func TestRemoteFinalizeAuthorizerInjection(t *testing.T) {
     p.SetRemoteFinalizeAuthorizer(func(_ context.Context, id int) (bool, error) {
         return id == 42, nil
     })
-    allowed, err := p.authorizeRemoteFinalize(context.Background(), 42)
+    allowed, err := p.authorizeRemoteFinalize(context.Background(), 42, "claim-42")
     if err != nil || !allowed {
         t.Fatalf("authorization result = (%v, %v)", allowed, err)
     }
-    allowed, err = p.authorizeRemoteFinalize(context.Background(), 43)
+    allowed, err = p.authorizeRemoteFinalize(context.Background(), 43, "claim-42")
     if err != nil || allowed {
         t.Fatalf("unexpected authorization result = (%v, %v)", allowed, err)
     }
+}
+
+func TestLegacyRemoteFinalizeRejectedInHAMode(t *testing.T) {
+    p := &TaskPool{}
+    p.SetClaimTask(func(context.Context, int) (bool, error) { return true, nil })
+    // Must reject before accessing state or performing any side effects.
+    p.FinalizeRemoteTask(nil, nil)
 }

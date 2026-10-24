@@ -399,6 +399,16 @@ func (c *RunnerController) UpdateRunner(w http.ResponseWriter, r *http.Request) 
 			continue
 		}
 
+		// A runner must never be allowed to submit an HA fencing identity to
+		// the legacy unfenced progress path, even when GetTask reconstructed
+		// the task without its in-memory durable claim (e.g. after failover).
+		// The future HA handler must validate this identity against PostgreSQL.
+		if job.Fencing != nil {
+			jobLog.Warn("rejecting fenced runner progress on legacy persistence path")
+			response.TerminatedJobs = append(response.TerminatedJobs, job.ID)
+			continue
+		}
+
 		// Until progress and output writes are transactionally fenced, refuse
 		// all reports for HA-claimed tasks. Echoing a token is not enough.
 		if tsk != nil && tsk.DurableClaim() != nil {

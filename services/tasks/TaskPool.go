@@ -146,6 +146,13 @@ func CreateTaskPool(
 	return p
 }
 
+// SetDispatchGuard installs an HA dispatch health check. A nil guard retains
+// legacy single-node behaviour. Call before starting the pool; do not change
+// it concurrently with task dispatch.
+func (p *TaskPool) SetDispatchGuard(check func() error) {
+	p.dispatchGuard = check
+}
+
 // StateStore returns the pluggable task state backend. Used by the Cluster
 // Dashboard to reach an optional TaskStateInspector implementation.
 func (p *TaskPool) StateStore() TaskStateStore {

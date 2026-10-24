@@ -53,6 +53,15 @@ type PoolEvent struct {
 	task      *TaskRunner
 }
 
+// DurableTaskClaim identifies the specific HA execution attempt.
+// Token is opaque to the runner and must be validated by PostgreSQL.
+type DurableTaskClaim struct {
+	TaskID int
+	Token string
+	OwnerNode string
+	OwnerGeneration string
+}
+
 type TaskPool struct {
 	// register channel used to put tasks to queue.
 	register chan *TaskRunner
@@ -89,7 +98,7 @@ type TaskPool struct {
 	// claimTask replaces the process-local claim when HA mode is configured.
 	// It must atomically acquire durable ownership and persist a fencing token.
 	// Returning an error stops this dispatch pass (fail closed).
-	claimTask func(context.Context, int) (bool, error)
+	claimTask func(context.Context, int) (*DurableTaskClaim, error)
 
 	// authorizeRemoteFinalize must atomically validate the durable fencing
 	// token before any remote completion side effects. In HA mode, failure
@@ -166,7 +175,7 @@ func (p *TaskPool) SetDispatchGuard(check func() error) {
 // SetClaimTask installs a durable task ownership callback for HA mode.
 // The callback must not dispatch externally: executor handoff and completion
 // still require fencing checks. Configure before starting the pool.
-func (p *TaskPool) SetClaimTask(claim func(context.Context, int) (bool, error)) {
+func (p *TaskPool) SetClaimTask(claim func(context.Context, int) (*DurableTaskClaim, error)) {
 	p.claimTask = claim
 }
 
@@ -454,13 +463,17 @@ func (p *TaskPool) handleQueue() {
 					log.Error("HA claim configured without dispatch guard")
 					return
 				}
-				claimed, err := p.claimTask(context.Background(), curr.Task.ID)
+				claim, err := p.claimTask(context.Background(), curr.Task.ID)
 				if err != nil {
 					log.WithError(err).Error("Durable task claim failed; stopping dispatch")
 					return
 				}
-				if !claimed {
+				if claim == nil {
 					continue
+				}
+				if claim.TaskID != curr.Task.ID || claim.Token == "" || claim.OwnerNode == "" || claim.OwnerGeneration == "" {
+					log.WithField("task_id", curr.Task.ID).Error("Durable claim missing fencing identity; stopping dispatch")
+					return
 				}
 				// Remove the local queue entry only after durable ownership succeeds.
 				p.state.DequeueByID(curr.Task.ID)

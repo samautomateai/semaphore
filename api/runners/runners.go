@@ -399,6 +399,14 @@ func (c *RunnerController) UpdateRunner(w http.ResponseWriter, r *http.Request) 
 			continue
 		}
 
+		// Until progress and output writes are transactionally fenced, refuse
+		// all reports for HA-claimed tasks. Echoing a token is not enough.
+		if tsk != nil && tsk.DurableClaim() != nil {
+			jobLog.Warn("rejecting HA runner progress: fenced persistence not implemented")
+			response.TerminatedJobs = append(response.TerminatedJobs, job.ID)
+			continue
+		}
+
 		if tsk == nil {
 			// Not in the pool. The task may have been stopped and finalized while
 			// the runner was offline; check the persisted row so the runner can be

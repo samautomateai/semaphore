@@ -468,6 +468,14 @@ func (p *TaskPool) handleQueue() {
 			// Atomically claim and remove the task so exactly one node runs it.
 			// On failure another node owns it (or it is already gone); leave it.
 			if p.claimTask != nil {
+				// HARD SAFETY GATE: no current runner assignment or completion
+				// protocol carries an authenticated durable fencing token, and
+				// task status/output writes are not transactionally fenced.
+				// A configurable readiness callback is NOT sufficient proof.
+				// Remove this gate only together with the real end-to-end
+				// protocol, transactional persistence and adversarial tests.
+				log.WithField("task_id", curr.Task.ID).Error("HA task dispatch unavailable: end-to-end fencing not implemented")
+				return
 				// A configured HA claim must not fall back to a local-only claim.
 				if p.dispatchGuard == nil {
 					log.Error("HA claim configured without dispatch guard")

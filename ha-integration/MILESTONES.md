@@ -60,3 +60,10 @@ Inspect runner assignment/report handlers, integrate coordinator migrations, the
 - `52b49cd`, `b240291`: hard-disable HA dispatch, regardless of readiness callback, until authenticated runner fencing and atomic status persistence exist. Legacy mode remains available.
 - `b267e9a`: adds validated assignment/completion DTO contract in `ha-integration/hafence/protocol.go`; **not yet wired into HTTP runner handlers**.
 - No compilation or integration test executed. Do not mark M3 complete.
+
+## 2026-10-24 M3 runner API integration
+- `9b5aa55`: optional `FencingIdentity` in runner `JobData` and `JobProgress` wire DTOs.
+- `2293914`: server job assignment populates fencing identity from `TaskRunner.DurableClaim()`.
+- `8b391b2`: server rejects progress reports for in-memory HA-claimed tasks pending atomic fenced persistence.
+- **Not complete:** runner client does not yet echo identity; task status/output writes remain unfenced; HA dispatch remains hard disabled. Reports for HA tasks reconstructed without in-memory claims need durable DB checks before enabling HA.
+- No full compile or integration tests executed.

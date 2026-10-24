@@ -24,8 +24,9 @@ type TaskMutation struct {
 // Those effects require a durable outbox in the same transaction.
 func ApplyTaskMutation(ctx context.Context, tx *sql.Tx, m TaskMutation) error {
  if tx == nil || m.Claim.TaskID <= 0 || m.RunnerID <= 0 { return ErrInvalidMutation }
+ if m.Outputs != nil && m.Status != "success" { return fmt.Errorf("%w: outputs require successful completion", ErrInvalidMutation) }
  switch m.Status {
- case "running", "success", "error", "stopped":
+ case "starting", "running", "stopping", "success", "error", "stopped":
  default:
   return fmt.Errorf("%w: unsupported status %q", ErrInvalidMutation, m.Status)
  }

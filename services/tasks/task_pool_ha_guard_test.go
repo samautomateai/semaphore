@@ -35,3 +35,18 @@ func TestTaskPoolDurableClaimInjection(t *testing.T) {
         t.Fatalf("claim result = (%v, %v)", ok, err)
     }
 }
+
+func TestRemoteFinalizeAuthorizerInjection(t *testing.T) {
+    p := &TaskPool{}
+    p.SetRemoteFinalizeAuthorizer(func(_ context.Context, id int) (bool, error) {
+        return id == 42, nil
+    })
+    allowed, err := p.authorizeRemoteFinalize(context.Background(), 42)
+    if err != nil || !allowed {
+        t.Fatalf("authorization result = (%v, %v)", allowed, err)
+    }
+    allowed, err = p.authorizeRemoteFinalize(context.Background(), 43)
+    if err != nil || allowed {
+        t.Fatalf("unexpected authorization result = (%v, %v)", allowed, err)
+    }
+}

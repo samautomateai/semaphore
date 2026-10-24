@@ -79,3 +79,15 @@ func TestTaskRunnerDurableClaimLegacyMode(t *testing.T) {
         t.Fatal("legacy runner should have no durable claim")
     }
 }
+
+func TestHAHandoffReadinessDefaultDisabled(t *testing.T) {
+    p := &TaskPool{}
+    if p.authorizeHandoff != nil {
+        t.Fatal("HA handoff must default to disabled")
+    }
+    sentinel := errors.New("runner protocol not ready")
+    p.SetHAHandoffAuthorizer(func(context.Context, int) error { return sentinel })
+    if err := p.authorizeHandoff(context.Background(), 1); !errors.Is(err, sentinel) {
+        t.Fatalf("handoff error = %v, want %v", err, sentinel)
+    }
+}

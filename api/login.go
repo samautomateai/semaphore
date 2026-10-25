@@ -723,7 +723,7 @@ func oidcLogin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to initialize OIDC provider. Contact your administrator.", http.StatusInternalServerError)
 		return
 	}
-	state := generateStateOauthCookie(w, returnPath, linkMode)
+	state := generateStateOauthCookie(w, returnPath, linkMode, pid)
 	u := oauth.AuthCodeURL(state)
 	status := http.StatusTemporaryRedirect
 	if r.Method == http.MethodPost {
@@ -734,12 +734,13 @@ func oidcLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 type oAuthState struct {
+	Provider string `json:"provider,omitempty"`
 	Csrf   string `json:"csrf"`
 	Return string `json:"return"`
 	Link   bool   `json:"link,omitempty"`
 }
 
-func generateStateOauthCookie(w http.ResponseWriter, returnPath string, link bool) string {
+func generateStateOauthCookie(w http.ResponseWriter, returnPath string, link bool, provider ...string) string {
 
 	// OAuth state is a short-lived, single-login CSRF secret, not a persistent cookie.
 	expiration := tz.Now().Add(10 * time.Minute)
@@ -767,6 +768,8 @@ func generateStateOauthCookie(w http.ResponseWriter, returnPath string, link boo
 		SameSite: http.SameSiteLaxMode,
 	}
 	http.SetCookie(w, &cookie)
+
+	if len(provider) > 0 { state.Provider = provider[0] }
 
 	stateBytes, err := json.Marshal(state)
 	if err != nil {
@@ -1033,6 +1036,17 @@ func oidcRedirect(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "OIDC sign-in failed: state mismatch. Try signing in again.", http.StatusBadRequest)
 		return
 	}
+
+	if stateData.Provider != pid {
+		recordLoginFailure(r, "", meta, audit.ReasonInvalidState)
+		http.Error(w, "OIDC sign-in failed: provider mismatch. Try signing in again.", http.StatusBadRequest)
+		return
+	}
+	// Consume the browser state cookie on the first matching callback.
+	http.SetCookie(w, &http.Cookie{
+		Name: "oauthstate", Path: "/", MaxAge: -1, HttpOnly: true,
+		Secure: isSecureWebHost(), SameSite: http.SameSiteLaxMode,
+	})
 
 	ctx := context.Background()
 

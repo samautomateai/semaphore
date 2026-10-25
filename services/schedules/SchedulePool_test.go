@@ -204,3 +204,20 @@ func TestScheduleProceedsWhenTryLockExecutionReturnsTrue(t *testing.T) {
 	assert.False(t, shouldSkip, "schedule should proceed when TryLockExecution returns true")
 	assert.Equal(t, 1, dedup.getLockAttempts(scheduleID), "TryLockExecution should be called once")
 }
+
+func TestOneTimeScheduleNeverRepeats(t *testing.T) {
+	at := time.Date(2026, 10, 25, 15, 0, 0, 0, time.UTC)
+	one := &oneTimeSchedule{runAt: at}
+	assert.Equal(t, at, one.Next(at.Add(-time.Second)))
+	assert.True(t, one.Next(at).IsZero())
+	assert.True(t, one.Next(at.Add(time.Second)).IsZero())
+}
+
+func TestOneTimeScheduleTimezoneInstant(t *testing.T) {
+	london, err := time.LoadLocation("Europe/London")
+	if err != nil { t.Fatal(err) }
+	at := time.Date(2026, 10, 25, 1, 30, 0, 0, london)
+	one := &oneTimeSchedule{runAt: at}
+	assert.True(t, one.Next(at.Add(-time.Second)).Equal(at))
+	assert.True(t, one.Next(at).IsZero())
+}

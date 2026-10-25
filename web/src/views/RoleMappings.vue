@@ -41,19 +41,6 @@
 
     <v-divider />
 
-    <v-alert v-if="false" text color="amber darken-3" class="PageAlert">
-      <span class="mr-1" v-html="$t('roles_only_enterprise')"></span>
-
-      <v-btn
-        dark
-        depressed
-        color="amber darken-3"
-        href="https://semaphoreui.com/enterprise?utm_source=app&utm_content=feature_roles"
-        target="_blank"
-      >
-        {{ $t('upgrade_to_pro') }}
-      </v-btn>
-    </v-alert>
 
     <v-data-table
       :headers="headers"

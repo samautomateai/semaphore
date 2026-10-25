@@ -2,6 +2,9 @@ package tasks
 
 import (
 	"testing"
+	"net/http"
+	"net/http/httptest"
+	"bytes"
 
 	"github.com/semaphoreui/semaphore/db"
 	"github.com/semaphoreui/semaphore/pkg/task_logger"
@@ -88,4 +91,24 @@ func TestShouldSkipStatusAlert(t *testing.T) {
 			assert.Equal(t, tt.expected, runner.shouldSkipStatusAlert())
 		})
 	}
+}
+
+func TestPostAlertDoesNotFollowRedirects(t *testing.T) {
+	var received bool
+	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		received = true
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer target.Close()
+	redirect := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, target.URL, http.StatusTemporaryRedirect)
+	}))
+	defer redirect.Close()
+	resp, err := postAlert(redirect.URL, bytes.NewBufferString(`{"status":"failed"}`))
+	assert.NoError(t, err)
+	if resp != nil {
+		defer resp.Body.Close()
+		assert.Equal(t, http.StatusTemporaryRedirect, resp.StatusCode)
+	}
+	assert.False(t, received, "notification payload must not be forwarded")
 }

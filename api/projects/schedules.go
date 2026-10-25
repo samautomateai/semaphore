@@ -137,6 +137,12 @@ func AddSchedule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// A schedule cannot reference a template from another project.
+	if _, err := helpers.Store(r).GetTemplate(project.ID, schedule.TemplateID); err != nil {
+		helpers.WriteError(w, err)
+		return
+	}
+
 	schedule.ProjectID = project.ID
 	schedule, err := helpers.Store(r).CreateSchedule(schedule)
 	if err != nil {
@@ -190,6 +196,12 @@ func UpdateSchedule(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !validateSchedulePayload(&schedule, w) {
+		return
+	}
+
+	// Enforce the schedule's project boundary when changing its template.
+	if _, err := helpers.Store(r).GetTemplate(oldSchedule.ProjectID, schedule.TemplateID); err != nil {
+		helpers.WriteError(w, err)
 		return
 	}
 

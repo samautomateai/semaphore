@@ -12,6 +12,8 @@ import (
 // container execution is already wired into the task scheduler.
 type ExecutionEnvironment struct {
 	Name string `json:"name"`
+	ProjectID int `json:"project_id"`
+	RegistryCredentialID *int `json:"registry_credential_id,omitempty"`
 	Image string `json:"image"`
 	PullPolicy ExecutionEnvironmentPullPolicy `json:"pull_policy"`
 }
@@ -39,7 +41,7 @@ func (e ExecutionEnvironment) Validate() error {
 	if !ok || name == "" || !executionEnvironmentDigest.MatchString(digest) {
 		return errors.New("execution environment image must use a sha256 digest")
 	}
-	if strings.HasPrefix(name, "-") || strings.Contains(name, "://") || strings.Contains(name, "@") {
+	if strings.HasPrefix(name, "-") || strings.Contains(name, "://") || strings.Contains(name, "@") || strings.ContainsAny(name, "\\?#") || strings.HasPrefix(name, "/") || strings.HasSuffix(name, "/") || strings.Contains(name, "//") {
 		return errors.New("invalid OCI image reference")
 	}
 	switch e.PullPolicy {

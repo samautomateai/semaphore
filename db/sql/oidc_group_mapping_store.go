@@ -1,6 +1,7 @@
 package sql
 
 import (
+	"database/sql"
 	"errors"
 	"strings"
 
@@ -52,7 +53,7 @@ func (s OIDCGroupMappingStore) DeleteRoleMapping(id int) (db.RoleMapping, []db.M
 	var mapping db.RoleMapping
 	err = tx.SelectOne(&mapping, s.DB.PrepareQuery("select * from group_role_mapping where id=?"), id)
 	if err != nil {
-		if errors.Is(err, db.ErrNotFound) { return db.RoleMapping{}, nil, db.ErrNotFound }
+		if errors.Is(err, sql.ErrNoRows) { return db.RoleMapping{}, nil, db.ErrNotFound }
 		return db.RoleMapping{}, nil, err
 	}
 	var removed []db.MappedRole
@@ -63,7 +64,7 @@ func (s OIDCGroupMappingStore) DeleteRoleMapping(id int) (db.RoleMapping, []db.M
 		from project__user_mapped_role mr
 		join group_role_mapping m on m.id=mr.mapping_id
 		join role r on r.id=m.role_id
-		join user u on u.id=mr.user_id
+		join `user` u on u.id=mr.user_id
 		where mr.mapping_id=?`), id)
 	if err != nil { return db.RoleMapping{}, nil, err }
 	_, err = tx.Exec(s.DB.PrepareQuery("delete from group_role_mapping where id=?"), id)

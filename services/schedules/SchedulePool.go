@@ -294,7 +294,7 @@ func (p *SchedulePool) Refresh() {
 			scheduleType = db.ScheduleTypeCron
 		}
 
-		if schedule.RepositoryID == nil && !schedule.Active {
+		if !schedule.Active {
 			continue
 		}
 

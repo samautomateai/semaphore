@@ -292,8 +292,8 @@ func (b *BackupDB) format() (*BackupFormat, error) {
 		}
 	}
 
-	schedules := make([]BackupSchedule, len(b.schedules))
-	for i, o := range b.schedules {
+	schedules := make([]BackupSchedule, 0, len(b.schedules))
+	for _, o := range b.schedules {
 
 		tplName, _ := findNameByID[db.Template](o.TemplateID, b.templates)
 		var repoName *string
@@ -305,15 +305,11 @@ func (b *BackupDB) format() (*BackupFormat, error) {
 			continue
 		}
 
-		schedules[i] = BackupSchedule{
-			o,
-			*tplName,
-			repoName,
-		}
-
+		item := BackupSchedule{o, *tplName, repoName}
 		if o.TaskParams != nil && o.TaskParams.InventoryID != nil {
-			schedules[i].TaskParams.InventoryName, _ = findNameByID[db.Inventory](*o.TaskParams.InventoryID, b.inventories)
+			item.TaskParams.InventoryName, _ = findNameByID[db.Inventory](*o.TaskParams.InventoryID, b.inventories)
 		}
+		schedules = append(schedules, item)
 	}
 
 	keys := make([]BackupAccessKey, len(b.keys))

@@ -117,6 +117,12 @@ func (r ScheduleRunner) Run() {
 		return
 	}
 
+	// A queued cron callback may race with deactivation or deletion. Always
+	// re-check the persisted active flag before launching any task.
+	if !schedule.Active {
+		return
+	}
+
 	scheduleType := schedule.Type
 	if scheduleType == "" {
 		scheduleType = db.ScheduleTypeCron

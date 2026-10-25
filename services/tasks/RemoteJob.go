@@ -122,10 +122,7 @@ func selectRunner(
 ) *db.Runner {
 	for i := range runners {
 		r := &runners[i]
-		if !r.IsOnline(now, offlineTimeout) {
-			continue
-		}
-		if r.HasFreeCapacity(busyTasks(r.ID)) {
+		if r.CanAcceptTask(now, offlineTimeout, busyTasks(r.ID)) {
 			return r
 		}
 	}

@@ -3,6 +3,7 @@ package factory
 import (
 	"github.com/semaphoreui/semaphore/db"
 	"github.com/semaphoreui/semaphore/pro/db/sql"
+	communitysql "github.com/semaphoreui/semaphore/db/sql"
 )
 
 func NewTerraformStore(store db.Store) db.TerraformStore {
@@ -22,5 +23,8 @@ func NewGlobalRoleStore(store db.Store) db.GlobalRoleStore {
 }
 
 func NewRoleMappingStore(store db.Store) db.RoleMappingStore {
+	if concrete, ok := store.(*communitysql.SqlDb); ok {
+		return communitysql.OIDCGroupMappingStore{DB: concrete}
+	}
 	return &sql.RoleMappingStoreImpl{}
 }

@@ -26,11 +26,11 @@ func (s OIDCGroupMappingStore) SyncMappedRoles(userID int, provider string, grou
 
 	// Lock the user row to serialize concurrent sign-ins on PostgreSQL/MySQL.
 	// SQLite uses its write transaction locking semantics.
-	if _, err = tx.Exec(s.DB.PrepareQuery("update user set id=id where id=?"), userID); err != nil {
+	if _, err = tx.Exec(s.DB.PrepareQuery("update `user` set id=id where id=?"), userID); err != nil {
 		return nil, nil, err
 	}
 	var exists int64
-	exists, err = tx.SelectInt(s.DB.PrepareQuery("select count(*) from user where id=?"), userID)
+	exists, err = tx.SelectInt(s.DB.PrepareQuery("select count(*) from `user` where id=?"), userID)
 	if err != nil { return nil, nil, err }
 	if exists != 1 { return nil, nil, db.ErrNotFound }
 
@@ -42,7 +42,7 @@ func (s OIDCGroupMappingStore) SyncMappedRoles(userID int, provider string, grou
 		from project__user_mapped_role mr
 		join group_role_mapping m on m.id=mr.mapping_id
 		join role r on r.id=m.role_id
-		join user u on u.id=mr.user_id
+		join "user" u on u.id=mr.user_id
 		where mr.user_id=? and m.provider=?`), userID, provider)
 	if err != nil { return nil, nil, err }
 
@@ -84,7 +84,7 @@ func (s OIDCGroupMappingStore) SyncMappedRoles(userID int, provider string, grou
 			from project__user_mapped_role mr
 			join group_role_mapping gm on gm.id=mr.mapping_id
 			join role r on r.id=gm.role_id
-			join user u on u.id=mr.user_id
+			join "user" u on u.id=mr.user_id
 			where mr.user_id=? and mr.mapping_id=?`), userID, m.ID)
 		if err != nil { return nil, nil, err }
 		added = append(added, mapped)

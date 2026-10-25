@@ -32,7 +32,7 @@
       <v-toolbar-title>{{ $t('roleMappings') }}</v-toolbar-title>
       <v-spacer></v-spacer>
       <v-btn
-        :disabled="!features.custom_roles_management"
+        
         color="primary"
         @click="editItem('new')"
         >{{ $t('newRoleMapping') }}</v-btn
@@ -41,7 +41,7 @@
 
     <v-divider />
 
-    <v-alert v-if="!features.custom_roles_management" text color="amber darken-3" class="PageAlert">
+    <v-alert v-if="false" text color="amber darken-3" class="PageAlert">
       <span class="mr-1" v-html="$t('roles_only_enterprise')"></span>
 
       <v-btn

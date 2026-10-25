@@ -16,6 +16,9 @@ func TestExecutionEnvironmentValidate(t *testing.T) {
 		name string
 		edit func(*ExecutionEnvironment)
 	}{
+		{"image query", func(e *ExecutionEnvironment) { e.Image = "registry.example.test/ansible?tag=latest@sha256:" + strings.Repeat("a", 64) }},
+		{"image fragment", func(e *ExecutionEnvironment) { e.Image = "registry.example.test/ansible#latest@sha256:" + strings.Repeat("a", 64) }},
+		{"absolute path", func(e *ExecutionEnvironment) { e.Image = "/ansible@sha256:" + strings.Repeat("a", 64) }},
 		{"mutable tag", func(e *ExecutionEnvironment) { e.Image = "registry.example.test/ansible:latest" }},
 		{"short digest", func(e *ExecutionEnvironment) { e.Image = "registry.example.test/ansible@sha256:abcd" }},
 		{"uppercase digest", func(e *ExecutionEnvironment) { e.Image = "registry.example.test/ansible@sha256:" + strings.Repeat("A", 64) }},

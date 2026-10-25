@@ -16,8 +16,9 @@ func TestOIDCMappingSchemaPreservesManualMembership(t *testing.T) {
 	user, err := store.CreateUserWithoutPassword(db.User{Username: "oidc-user", Name: "OIDC User", Email: "oidc@example.test"})
 	require.NoError(t, err)
 
-	projectID, err := store.insert("id", "insert into project (name, created) values (?, CURRENT_TIMESTAMP)", "OIDC mapping test")
+	project, err := store.CreateProject(db.Project{Name: "OIDC mapping test"})
 	require.NoError(t, err)
+	projectID := project.ID
 
 	roleID, err := store.insert("id", "insert into role (slug, name, permissions, project_id, scope, builtin) values (?, ?, ?, ?, ?, ?)", "oidc-runner", "OIDC Runner", 1, projectID, projectID, false)
 	require.NoError(t, err)

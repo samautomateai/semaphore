@@ -115,7 +115,7 @@ func TestPostAlertDoesNotFollowRedirects(t *testing.T) {
 
 func TestPostAlertRejectsInvalidDestinations(t *testing.T) {
 	for _, endpoint := range []string{
-		"", "file:///etc/passwd", "ftp://example.com", "javascript:alert(1)", "https:///missing-host",
+		"", "file:///etc/passwd", "ftp://example.com", "javascript:alert(1)", "https:///missing-host", "https://user:pass@example.com/hook", "https://example.com/hook#fragment",
 	} {
 		t.Run(endpoint, func(t *testing.T) {
 			resp, err := postAlert(endpoint, bytes.NewBufferString("{}"))

@@ -21,3 +21,11 @@ Provide digest-pinned, isolated Linux OCI execution environments for Ansible job
 8. Unit, integration, security and end-to-end validation on Go 1.26.4.
 
 **Not complete or compiled:** these commits do not claim working execution environments.
+
+## Runtime adapter checkpoint — 2026-10-25
+
+- `8c7bdd0`: added opt-in Docker/Podman CLI command builder and runner with no shell interpolation.
+- `9f81468`: translates internal `if_not_present` policy to CLI `--pull=missing`.
+- `5c21676`: regression coverage for restrictions, unsupported runtime, and relative workspace paths.
+
+**Important limitations:** The adapter is not dispatched from task templates or runner APIs. Workspace canonicalization, symlink defense, trusted ownership, secrets, network policy, registry login, capability discovery, persistence, UI, cleanup, and integration tests are pending. Container flags are not a complete security boundary; Docker daemon privileges and host filesystem permissions require a separate threat-model review. Tests have not been executed. Do not enable in production.

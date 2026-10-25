@@ -213,7 +213,7 @@ func (t *TaskRunner) sendTelegramAlert() {
 	)
 
 	if err != nil {
-		t.Log("Can't send telegram alert! Error: " + err.Error())
+		t.Log("Can't send telegram alert (transport error)")
 	} else if resp.StatusCode != 200 {
 		t.Log("Can't send telegram alert! Response code: " + strconv.Itoa(resp.StatusCode))
 	} else {
@@ -524,7 +524,7 @@ func (t *TaskRunner) sendGotifyAlert() {
 	)
 
 	if err != nil {
-		t.Log("Can't send gotify alert! Error: " + err.Error())
+		t.Log("Can't send gotify alert (transport error)")
 	} else if resp.StatusCode != 200 {
 		t.Log("Can't send gotify alert! Response code: " + strconv.Itoa(resp.StatusCode))
 	} else {

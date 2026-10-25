@@ -6,6 +6,8 @@ import (
 	"fmt"
 	htmltemplate "html/template"
 	"net/http"
+	"net/url"
+	"errors"
 	"strconv"
 	"text/template"
 	"time"
@@ -22,6 +24,12 @@ var alertHTTPClient = &http.Client{Timeout: 15 * time.Second}
 // postAlert sends a bounded notification request and rejects redirects. A
 // redirect can leak webhook credentials or payloads to another destination.
 func postAlert(url string, body *bytes.Buffer) (*http.Response, error) {
+	parsed, err := url.Parse(url)
+	if err != nil || parsed.Host == "" || (parsed.Scheme != "https" && parsed.Scheme != "http") {
+		return nil, errors.New("invalid notification endpoint URL")
+	}
+	// Insecure HTTP is permitted only for loopback testing and explicitly
+	// configured private deployments; production operators should use HTTPS.
 	client := *alertHTTPClient
 	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		return http.ErrUseLastResponse

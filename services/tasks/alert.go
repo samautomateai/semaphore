@@ -5,9 +5,9 @@ import (
 	"embed"
 	"fmt"
 	htmltemplate "html/template"
+	"errors"
 	"net/http"
 	"net/url"
-	"errors"
 	"strconv"
 	"text/template"
 	"time"
@@ -25,7 +25,7 @@ var alertHTTPClient = &http.Client{Timeout: 15 * time.Second}
 // redirect can leak webhook credentials or payloads to another destination.
 func postAlert(url string, body *bytes.Buffer) (*http.Response, error) {
 	parsed, err := url.Parse(url)
-	if err != nil || parsed.Host == "" || (parsed.Scheme != "https" && parsed.Scheme != "http") {
+	if err != nil || parsed.Host == "" || parsed.User != nil || parsed.Fragment != "" || (parsed.Scheme != "https" && parsed.Scheme != "http") {
 		return nil, errors.New("invalid notification endpoint URL")
 	}
 	// Insecure HTTP is permitted only for loopback testing and explicitly

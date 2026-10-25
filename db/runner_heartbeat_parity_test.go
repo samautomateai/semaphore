@@ -37,3 +37,29 @@ func TestRunnerHeartbeatEligibility(t *testing.T) {
 }
 
 func timePtr(t time.Time) *time.Time { return &t }
+
+func TestRunnerDispatchEligibility(t *testing.T) {
+	now := time.Date(2026, 10, 25, 13, 0, 0, 0, time.UTC)
+	heartbeat := now.Add(-time.Second)
+	base := Runner{Active:true, Token:"registered-token", Touched:&heartbeat, MaxParallelTasks:2}
+	require.True(t, base.CanAcceptTask(now, 30*time.Second, 0))
+	require.True(t, base.CanAcceptTask(now, 30*time.Second, 1))
+	require.False(t, base.CanAcceptTask(now, 30*time.Second, 2))
+	require.False(t, base.CanAcceptTask(now, 30*time.Second, -1))
+	inactive := base
+	inactive.Active = false
+	require.False(t, inactive.CanAcceptTask(now, 30*time.Second, 0))
+	unregistered := base
+	unregistered.Token = ""
+	require.False(t, unregistered.CanAcceptTask(now, 30*time.Second, 0))
+	stale := base
+	old := now.Add(-time.Minute)
+	stale.Touched = &old
+	require.False(t, stale.CanAcceptTask(now, 30*time.Second, 0))
+	unlimited := base
+	unlimited.MaxParallelTasks = 0
+	require.True(t, unlimited.CanAcceptTask(now, 30*time.Second, 1000))
+	invalid := base
+	invalid.MaxParallelTasks = -1
+	require.False(t, invalid.CanAcceptTask(now, 30*time.Second, 0))
+}

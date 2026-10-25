@@ -331,3 +331,17 @@ func TestOidcSuccessRedirectURL_NotRelative(t *testing.T) {
 		callback.ResolveReference(location).String(),
 		"the browser must not resolve the redirect against the callback path")
 }
+
+func TestOIDCStateBindsProvider(t *testing.T) {
+	w := httptest.NewRecorder()
+	encoded := generateStateOauthCookie(w, "/", false, "keycloak")
+	decoded, err := base64.URLEncoding.DecodeString(encoded)
+	require.NoError(t, err)
+	var state oAuthState
+	require.NoError(t, json.Unmarshal(decoded, &state))
+	assert.Equal(t, "keycloak", state.Provider)
+	assert.NotEmpty(t, state.Csrf)
+	cookie := w.Result().Cookies()[0]
+	assert.Equal(t, "oauthstate", cookie.Name)
+	assert.Equal(t, state.Csrf, cookie.Value)
+}

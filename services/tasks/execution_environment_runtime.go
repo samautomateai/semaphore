@@ -40,8 +40,14 @@ func (r ExecutionEnvironmentRuntime) command(ctx context.Context, job ExecutionE
 			return nil, errors.New("container command contains NUL")
 		}
 	}
+	pullPolicy := "missing"
+	if job.Environment.PullPolicy == db.ExecutionEnvironmentPullAlways {
+		pullPolicy = "always"
+	} else if job.Environment.PullPolicy == db.ExecutionEnvironmentPullNever {
+		pullPolicy = "never"
+	}
 	args := []string{
-		"run", "--rm", "--pull=" + string(job.Environment.PullPolicy),
+		"run", "--rm", "--pull=" + pullPolicy,
 		"--network=none", "--cap-drop=ALL", "--security-opt=no-new-privileges",
 		"--read-only", "--pids-limit=256", "--memory=1g", "--cpus=1",
 		"--user=65534:65534", "--workdir=/workspace",

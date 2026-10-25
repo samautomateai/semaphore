@@ -2,6 +2,7 @@ package projects
 
 import (
 	"io"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -100,10 +101,16 @@ func (c *BackupController) Restore(w http.ResponseWriter, r *http.Request) {
 
 	var backup projectService.BackupFormat
 
+	const maxBackupBytes int64 = 32 << 20 // 32 MiB, including JSON overhead
 	buf := new(strings.Builder)
-	if _, err := io.Copy(buf, r.Body); err != nil {
+	if _, err := io.Copy(buf, io.LimitReader(r.Body, maxBackupBytes+1)); err != nil {
 		log.Error(err)
 		helpers.WriteError(w, err)
+		return
+	}
+
+	if int64(buf.Len()) > maxBackupBytes {
+		helpers.WriteErrorStatus(w, errors.New("project backup exceeds 32 MiB limit").Error(), http.StatusRequestEntityTooLarge)
 		return
 	}
 

@@ -89,7 +89,7 @@ func (r Runner) IsOnline(now time.Time, offlineTimeout time.Duration) bool {
 	if r.Webhook != "" {
 		return true
 	}
-	return r.Touched != nil && now.Sub(*r.Touched) <= offlineTimeout
+	return r.Touched != nil && offlineTimeout > 0 && !r.Touched.After(now) && now.Sub(*r.Touched) <= offlineTimeout
 }
 
 // HasFreeCapacity reports whether the runner can take one more task.

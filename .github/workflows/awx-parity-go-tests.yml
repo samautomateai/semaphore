@@ -7,6 +7,8 @@ on:
     paths:
       - 'db/**'
       - 'pro/**'
+      - 'services/tasks/**'
+      - 'services/runners/**'
       - 'api/**'
       - 'go.mod'
       - 'go.sum'
@@ -32,5 +34,7 @@ jobs:
           if [ -n "$files" ]; then echo "$files"; exit 1; fi
       - name: Targeted OIDC and RBAC tests
         run: go test -count=1 -timeout=10m ./db/sql ./pro/api ./pro/services/server ./pro/db/factory
+      - name: Runner scheduling and execution tests
+        run: go test -count=1 -timeout=10m ./db ./services/tasks ./services/runners
       - name: API compilation
         run: go test -run '^$' ./api/...

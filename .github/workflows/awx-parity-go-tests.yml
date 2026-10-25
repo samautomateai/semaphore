@@ -28,7 +28,7 @@ jobs:
           cache: true
       - name: Go formatting
         run: |
-          files="$(gofmt -l db/sql/oidc_group_mapping_store.go db/sql/oidc_group_mapping_sync.go db/sql/oidc_group_mapping_schema_test.go db/sql/oidc_group_mapping_sync_test.go pro/services/server/keycloak_groups.go pro/services/server/keycloak_groups_test.go pro/services/server/role_sync_svc.go pro/services/server/role_sync_svc_test.go pro/db/factory/factory.go 2>/dev/null || true)"
+          files="$(gofmt -l db/sql/oidc_group_mapping_store.go db/sql/oidc_group_mapping_sync.go db/sql/oidc_mapping_schema_test.go db/sql/oidc_group_mapping_sync_test.go pro/services/server/keycloak_groups.go pro/services/server/keycloak_groups_test.go pro/services/server/role_sync_svc.go pro/services/server/role_sync_svc_test.go pro/db/factory/factory.go 2>/dev/null || true)"
           if [ -n "$files" ]; then echo "$files"; exit 1; fi
       - name: Targeted OIDC and RBAC tests
         run: go test -count=1 -timeout=10m ./db/sql ./pro/services/server ./pro/db/factory

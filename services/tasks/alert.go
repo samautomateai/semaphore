@@ -119,7 +119,7 @@ func (t *TaskRunner) sendMailAlert() {
 			util.Config.EmailPassword,
 			util.Config.EmailSender,
 			user.Email,
-			fmt.Sprintf("Task '%s' failed", t.Template.Name),
+			fmt.Sprintf("Task '%s': %s", t.Template.Name, t.Task.Status.Format()),
 			str,
 		); err != nil {
 			util.LogError(err)

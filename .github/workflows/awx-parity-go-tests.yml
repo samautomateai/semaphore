@@ -12,6 +12,9 @@ on:
       - 'services/schedules/**'
       - 'services/audit/**'
       - 'api/**'
+      - 'services/project/**'
+      - 'services/export/**'
+      - 'awx-parity/**'
       - 'go.mod'
       - 'go.sum'
       - '.github/workflows/awx-parity-go-tests.yml'
@@ -44,3 +47,10 @@ jobs:
         run: go test -count=1 -timeout=10m ./services/audit
       - name: API compilation
         run: go test -run '^$' ./api/...
+
+      - name: Backup and restore regression tests
+        run: go test -count=1 -timeout=10m ./services/project ./services/export
+      - name: Full Go package compilation
+        run: go test -run '^$' ./...
+      - name: Full Go test suite
+        run: go test -count=1 -timeout=20m ./...

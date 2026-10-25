@@ -112,3 +112,15 @@ func TestPostAlertDoesNotFollowRedirects(t *testing.T) {
 	}
 	assert.False(t, received, "notification payload must not be forwarded")
 }
+
+func TestPostAlertRejectsInvalidDestinations(t *testing.T) {
+	for _, endpoint := range []string{
+		"", "file:///etc/passwd", "ftp://example.com", "javascript:alert(1)", "https:///missing-host",
+	} {
+		t.Run(endpoint, func(t *testing.T) {
+			resp, err := postAlert(endpoint, bytes.NewBufferString("{}"))
+			assert.Error(t, err)
+			assert.Nil(t, resp)
+		})
+	}
+}

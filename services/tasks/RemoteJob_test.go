@@ -36,3 +36,26 @@ func TestRunnerExclusionReason(t *testing.T) {
 		})
 	}
 }
+
+func TestSelectRunnerEnforcesDispatchEligibility(t *testing.T) {
+	now := time.Date(2026, 10, 25, 14, 0, 0, 0, time.UTC)
+	recent := now.Add(-time.Second)
+	stale := now.Add(-time.Minute)
+	future := now.Add(time.Minute)
+	runners := []db.Runner{
+		{ID:1, Active:false, Token:"token", Touched:&recent},
+		{ID:2, Active:true, Touched:&recent},
+		{ID:3, Active:true, Token:"token", Touched:&stale},
+		{ID:4, Active:true, Token:"token", Touched:&future},
+		{ID:5, Active:true, Token:"token", Touched:&recent, MaxParallelTasks:1},
+		{ID:6, Active:true, Token:"token", Touched:&recent, MaxParallelTasks:2},
+	}
+	busy := func(id int) int {
+		if id == 5 { return 1 }
+		return 0
+	}
+	selected := selectRunner(runners, now, 30*time.Second, busy)
+	assert.NotNil(t, selected)
+	if selected != nil { assert.Equal(t, 6, selected.ID) }
+	assert.Nil(t, selectRunner(runners[:5], now, 30*time.Second, busy))
+}

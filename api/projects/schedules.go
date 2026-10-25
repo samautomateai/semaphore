@@ -95,7 +95,7 @@ func validateSchedulePayload(schedule *db.Schedule, w http.ResponseWriter) bool 
 			return false
 		}
 
-		if schedule.RunAt.Before(time.Now()) {
+		if !schedule.RunAt.After(time.Now()) {
 			helpers.WriteJSON(w, http.StatusBadRequest, map[string]string{
 				"error": "run_at must be in the future",
 			})

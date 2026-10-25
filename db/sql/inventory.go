@@ -43,7 +43,7 @@ func (d *SqlDb) UpdateInventory(inventory db.Inventory) error {
 			"become_key_id=?, "+
 			"template_id=?, "+
 			"repository_id=? "+
-			"where id=?",
+			"where id=? and project_id=?",
 		inventory.Name,
 		inventory.Type,
 		inventory.RunnerTag,
@@ -52,7 +52,8 @@ func (d *SqlDb) UpdateInventory(inventory db.Inventory) error {
 		inventory.BecomeKeyID,
 		inventory.TemplateID,
 		inventory.RepositoryID,
-		inventory.ID)
+		inventory.ID,
+		inventory.ProjectID)
 
 	return err
 }

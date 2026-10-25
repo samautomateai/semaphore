@@ -7,8 +7,8 @@ import (
 	htmltemplate "html/template"
 	"net/http"
 	"strconv"
-	"time"
 	"text/template"
+	"time"
 
 	"github.com/semaphoreui/semaphore/db"
 	"github.com/semaphoreui/semaphore/pkg/task_logger"
@@ -18,6 +18,16 @@ import (
 
 // A notification endpoint must not stall task finalization indefinitely.
 var alertHTTPClient = &http.Client{Timeout: 15 * time.Second}
+
+// postAlert sends a bounded notification request and rejects redirects. A
+// redirect can leak webhook credentials or payloads to another destination.
+func postAlert(url string, body *bytes.Buffer) (*http.Response, error) {
+	client := *alertHTTPClient
+	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
+	return client.Post(url, "application/json", body)
+}
 
 //go:embed templates/*.tmpl
 var templates embed.FS
@@ -186,12 +196,11 @@ func (t *TaskRunner) sendTelegramAlert() {
 
 	t.Log("Attempting to send telegram alert")
 
-	resp, err := alertHTTPClient.Post(
+	resp, err := postAlert(
 		fmt.Sprintf(
 			"https://api.telegram.org/bot%s/sendMessage",
 			util.Config.TelegramToken,
 		),
-		"application/json",
 		body,
 	)
 
@@ -252,9 +261,8 @@ func (t *TaskRunner) sendSlackAlert() {
 
 	t.Log("Attempting to send slack alert")
 
-	resp, err := alertHTTPClient.Post(
+	resp, err := postAlert(
 		util.Config.SlackUrl,
-		"application/json",
 		body,
 	)
 
@@ -315,9 +323,8 @@ func (t *TaskRunner) sendRocketChatAlert() {
 
 	t.Log("Attempting to send rocketchat alert")
 
-	resp, err := alertHTTPClient.Post(
+	resp, err := postAlert(
 		util.Config.RocketChatUrl,
-		"application/json",
 		body,
 	)
 
@@ -377,9 +384,8 @@ func (t *TaskRunner) sendMicrosoftTeamsAlert() {
 
 	t.Log("Attempting to send microsoft teams alert")
 
-	resp, err := alertHTTPClient.Post(
+	resp, err := postAlert(
 		util.Config.MicrosoftTeamsUrl,
-		"application/json",
 		body,
 	)
 
@@ -439,9 +445,8 @@ func (t *TaskRunner) sendDingTalkAlert() {
 
 	t.Log("Attempting to send dingtalk alert")
 
-	resp, err := alertHTTPClient.Post(
+	resp, err := postAlert(
 		util.Config.DingTalkUrl,
-		"application/json",
 		body,
 	)
 
@@ -502,12 +507,11 @@ func (t *TaskRunner) sendGotifyAlert() {
 
 	t.Log("Attempting to send gotify alert")
 
-	resp, err := alertHTTPClient.Post(
+	resp, err := postAlert(
 		fmt.Sprintf(
 			"%s/message?token=%s",
 			util.Config.GotifyUrl,
 			util.Config.GotifyToken),
-		"application/json",
 		body,
 	)
 

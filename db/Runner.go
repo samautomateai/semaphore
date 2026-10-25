@@ -95,7 +95,14 @@ func (r Runner) IsOnline(now time.Time, offlineTimeout time.Duration) bool {
 // HasFreeCapacity reports whether the runner can take one more task.
 // MaxParallelTasks == 0 means unlimited.
 func (r Runner) HasFreeCapacity(runningTasks int) bool {
-	return r.MaxParallelTasks == 0 || runningTasks < r.MaxParallelTasks
+	return runningTasks >= 0 && r.MaxParallelTasks >= 0 && (r.MaxParallelTasks == 0 || runningTasks < r.MaxParallelTasks)
+}
+
+// CanAcceptTask is the shared eligibility gate for new work. A runner must be
+// enabled, registered, reachable and have free capacity. Callers must still
+// enforce project scope and tag matching before dispatch.
+func (r Runner) CanAcceptTask(now time.Time, offlineTimeout time.Duration, runningTasks int) bool {
+	return r.Active && r.IsRegistered() && r.IsOnline(now, offlineTimeout) && r.HasFreeCapacity(runningTasks)
 }
 
 // FillStatus populates the transient Status field from heartbeat liveness.

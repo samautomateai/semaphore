@@ -10,6 +10,7 @@ on:
       - 'services/tasks/**'
       - 'services/runners/**'
       - 'services/schedules/**'
+      - 'services/audit/**'
       - 'api/**'
       - 'go.mod'
       - 'go.sum'
@@ -39,5 +40,7 @@ jobs:
         run: go test -count=1 -timeout=10m ./db ./services/tasks ./services/runners
       - name: Schedule lifecycle tests
         run: go test -count=1 -timeout=10m ./services/schedules ./api/projects
+      - name: Notification and audit tests
+        run: go test -count=1 -timeout=10m ./services/audit
       - name: API compilation
         run: go test -run '^$' ./api/...

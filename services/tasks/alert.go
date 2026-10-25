@@ -7,6 +7,7 @@ import (
 	htmltemplate "html/template"
 	"net/http"
 	"strconv"
+	"time"
 	"text/template"
 
 	"github.com/semaphoreui/semaphore/db"
@@ -14,6 +15,9 @@ import (
 	"github.com/semaphoreui/semaphore/util"
 	"github.com/semaphoreui/semaphore/util/mailer"
 )
+
+// A notification endpoint must not stall task finalization indefinitely.
+var alertHTTPClient = &http.Client{Timeout: 15 * time.Second}
 
 //go:embed templates/*.tmpl
 var templates embed.FS
@@ -182,7 +186,7 @@ func (t *TaskRunner) sendTelegramAlert() {
 
 	t.Log("Attempting to send telegram alert")
 
-	resp, err := http.Post(
+	resp, err := alertHTTPClient.Post(
 		fmt.Sprintf(
 			"https://api.telegram.org/bot%s/sendMessage",
 			util.Config.TelegramToken,
@@ -248,7 +252,7 @@ func (t *TaskRunner) sendSlackAlert() {
 
 	t.Log("Attempting to send slack alert")
 
-	resp, err := http.Post(
+	resp, err := alertHTTPClient.Post(
 		util.Config.SlackUrl,
 		"application/json",
 		body,
@@ -311,7 +315,7 @@ func (t *TaskRunner) sendRocketChatAlert() {
 
 	t.Log("Attempting to send rocketchat alert")
 
-	resp, err := http.Post(
+	resp, err := alertHTTPClient.Post(
 		util.Config.RocketChatUrl,
 		"application/json",
 		body,
@@ -373,7 +377,7 @@ func (t *TaskRunner) sendMicrosoftTeamsAlert() {
 
 	t.Log("Attempting to send microsoft teams alert")
 
-	resp, err := http.Post(
+	resp, err := alertHTTPClient.Post(
 		util.Config.MicrosoftTeamsUrl,
 		"application/json",
 		body,
@@ -435,7 +439,7 @@ func (t *TaskRunner) sendDingTalkAlert() {
 
 	t.Log("Attempting to send dingtalk alert")
 
-	resp, err := http.Post(
+	resp, err := alertHTTPClient.Post(
 		util.Config.DingTalkUrl,
 		"application/json",
 		body,
@@ -498,7 +502,7 @@ func (t *TaskRunner) sendGotifyAlert() {
 
 	t.Log("Attempting to send gotify alert")
 
-	resp, err := http.Post(
+	resp, err := alertHTTPClient.Post(
 		fmt.Sprintf(
 			"%s/message?token=%s",
 			util.Config.GotifyUrl,

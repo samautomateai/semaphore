@@ -154,7 +154,7 @@ func IsValidInventoryPath(path string) bool {
 		return false
 	}
 
-	return !strings.HasPrefix(relPath, "..")
+	return relPath != ".." && !strings.HasPrefix(relPath, ".."+string(filepath.Separator))
 }
 
 // UpdateInventory writes updated values to an existing inventory item in the database

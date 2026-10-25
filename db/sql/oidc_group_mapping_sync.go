@@ -34,9 +34,6 @@ func (s OIDCGroupMappingStore) SyncMappedRoles(userID int, provider string, grou
 	if err != nil { return nil, nil, err }
 	if exists != 1 { return nil, nil, db.ErrNotFound }
 
-	type assignment struct {
-		db.MappedRole
-	}
 	var current []db.MappedRole
 	_, err = tx.Select(&current, s.DB.PrepareQuery(`
 		select mr.project_id, mr.user_id, u.username, mr.mapping_id,

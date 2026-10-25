@@ -2,6 +2,7 @@ package projects
 
 import (
 	"io"
+	"encoding/json"
 	"net/http"
 	"strings"
 
@@ -114,6 +115,10 @@ func (c *BackupController) Restore(w http.ResponseWriter, r *http.Request) {
 	}
 
 	str := buf.String()
+	if !json.Valid([]byte(str)) {
+		helpers.WriteErrorStatus(w, "invalid project backup JSON", http.StatusBadRequest)
+		return
+	}
 
 	if err := backup.Unmarshal(str); err != nil {
 		log.WithFields(log.Fields{
